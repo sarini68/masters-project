@@ -1,0 +1,20 @@
+the technologies to consider:
+
+a.python: anaconda framework - https://www.continuum.io/downloads (python 3.6)
+
+b.neo4j - https://neo4j.com/download/ (community edition)
+
+c. neo4j python drivers - 
+https://neo4j.com/docs/developer-manual/3.2/drivers/get-started/
+(*) https://pypi.python.org/pypi/neo4j-driver
+
+I used Bolt drivers, often is also cited the http://py2neo.org/2.0/,
+but this last is not updated with the new versions of neo4j, so please consider the Bolt driver (*)
+
+d.flask web application framework - http://flask.pocoo.org/
+
+---create a demo of the architecture:
+python + neo4j + flask (see video and example by following the links below)
+
+https://neo4j.com/blog/building-python-web-application-using-flask-neo4j/
+https://nicolewhite.github.io/neo4j-flask/
