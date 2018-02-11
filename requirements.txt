@@ -1,2 +1,3 @@
 pygal
+matplotlib
 neo4j-driver
