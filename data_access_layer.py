@@ -1,4 +1,5 @@
 import collections
+from typing import List
 
 import neo4j.v1
 
@@ -9,6 +10,7 @@ class DAL(object):
         self._cases = []
         self._performers = []
         self._works_with = []
+        self._activity = []
 
         self.driver = driver
 
@@ -73,7 +75,7 @@ class DAL(object):
     '''
 
     WorksWithEntry = collections.namedtuple('WorksWithEntry',
-                                            ['performer', 'time', 'id'])
+                                            ['case', 'performer', 'time', 'id'])
 
     def fetch_works_with(self):
         works_with = []
@@ -84,11 +86,35 @@ class DAL(object):
                 performer.append(record["name"])
                 time.append(record["time"])
                 _id.append(record["id"])
-            works_with.append(self.WorksWithEntry(performer, time, _id))
+            works_with.append(self.WorksWithEntry(case, performer, time, _id))
         return works_with
 
     @property
-    def works_with(self):
+    def works_with(self) -> List[WorksWithEntry]:
         if not self._works_with:
             self._works_with = self.fetch_works_with()
         return self._works_with
+
+    ACTIVITY_QUERY = '''
+    match (c:case)-[:includes]->(act:activity)-[:performed_by]->(p:performer)
+    where c.id = {case} and p.name={namename1} and p.created={time}
+    return act.name as name
+    '''
+
+    def fetch_activities(self):
+        activity = []
+        for entry in self.works_with:
+            tmpa = []
+            for name, time in zip(entry.performer, entry.time):
+                params = {'case': entry.case, 'namename1': name, 'time': time}
+                query_result = self.run_query(self.ACTIVITY_QUERY, params)
+                tmpa.extend([record['name'] for record in query_result])
+            activity.append(tmpa)
+
+        return activity
+
+    @property
+    def activity(self):
+        if not self._activity:
+            self._activity = self.fetch_activities()
+        return self._activity
