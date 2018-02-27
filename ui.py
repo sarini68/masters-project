@@ -1,5 +1,7 @@
 from tkinter import ttk, Tk, StringVar, N, W, E, S, BooleanVar
 
+from query_builder import QueryBuilder
+
 
 class ProgramGUI:
 
@@ -64,7 +66,7 @@ class ProgramGUI:
         rb = ttk.Radiobutton(self.mainframe, text='Any', variable=self.length_option_var, value='any')
         rb.grid(column=2, row=3, sticky=W)
 
-        # Length option: exectly
+        # Length option: exactly
         rb = ttk.Radiobutton(self.mainframe, text='Exactly', variable=self.length_option_var, value='exactly')
         rb.grid(column=2, row=4, sticky=W)
         ttk.Entry(self.mainframe, width=3, textvariable=self.exact_length_var).grid(column=3, row=4, sticky=(W, E))
@@ -108,13 +110,25 @@ class ProgramGUI:
         ttk.Button(self.mainframe, text="Search pattern", command=self.search_pattern).grid(column=7, row=9, sticky=W)
 
     def search_pattern(self):
-        print("Performer 1: <{}>".format(self.performer_one_var.get()))
-        print("Performer 2: <{}>".format(self.performer_two_var.get()))
-        print("Search same activity: <{}>".format(self.search_same_activity_var.get()))
-        print("Search same performer: <{}>".format(self.search_same_performer_var.get()))
-        print("Length option: <{}>".format(self.length_option_var.get()))
-        print("Exact length: <{}>".format(self.exact_length_var.get()))
-        print("At least length: <{}>".format(self.at_least_length_var.get()))
-        print("At most length: <{}>".format(self.at_most_length_var.get()))
-        print("Length from <{}> to <{}>".format(self.from_length_var.get(), self.to_length_var.get()))
+        query_builder = QueryBuilder()
+        query_builder.performer_one = self.performer_one_var.get()
+        query_builder.performer_two = self.performer_two_var.get()
+        query_builder.same_activity = self.search_same_activity_var.get()
+        query_builder.same_performer = self.search_same_performer_var.get()
+
+        length_option = self.length_option_var.get()
+        if length_option == 'exactly':
+            query_builder.pattern_length = self.exact_length_var.get()
+
+        if length_option == 'at least':
+            query_builder.pattern_length_from = self.at_least_length_var.get()
+
+        if length_option == 'at most':
+            query_builder.pattern_length_to = self.at_most_length_var.get()
+
+        if length_option == 'between':
+            query_builder.pattern_length_from = self.from_length_var.get()
+            query_builder.pattern_length_to = self.to_length_var.get()
+
         print('-' * 80)
+        print(query_builder.build().replace('    ', ' '))
