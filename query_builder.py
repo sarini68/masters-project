@@ -8,8 +8,8 @@ class QueryBuilder:
         self.performer_one = '.*'
         self.performer_two = '.*'
 
-        self.same_activity = True
-        self.same_performer = False
+        self.same_activity = False
+        self.different_performer = False
 
     @property
     def length_range(self):
@@ -20,14 +20,6 @@ class QueryBuilder:
 
         return length_range if length_range != '..' else ''
 
-    @property
-    def performer_cmp(self):
-        return '=' if self.same_performer else '<>'
-
-    @property
-    def activity_cmp(self):
-        return '=' if self.same_activity else '<>'
-
     def build(self):
         return f'''
             match
@@ -35,12 +27,12 @@ class QueryBuilder:
                 (p1:performer)-[:works_with*{self.length_range}]->(p2:performer)
                 <-[]-(a2)<-[]-(c2)
             where
-                c1.id = {{case}} and
-                c2.id = {{case}} and
-                p1.name=~'{self.performer_one}' and
-                p2.name=~'{self.performer_two}' and
-                p1.name{self.performer_cmp}p2.name' and
-                a1.name{self.activity_cmp}a2.name'
+                c1.id = {{case}}
+                and c2.id = {{case}}
+                and p1.name=~'{self.performer_one}'
+                and p2.name=~'{self.performer_two}'
+                {"and p1.name<>p2.name" if self.different_performer else ''}
+                {"and a1.name=a2.name" if self.same_activity else ''}
             return
                 p1.name as name1, id(p1) as id1,
                 p2.name as name2, id(p2) as id2

@@ -1,11 +1,13 @@
 from tkinter import ttk, Tk, StringVar, N, W, E, S, BooleanVar
 
+from data_access_layer import DAL
 from query_builder import QueryBuilder
 
 
 class ProgramGUI:
 
-    def __init__(self, performers):
+    def __init__(self, dal: DAL):
+        self.dal = dal
         # building the query pattern generator user interface
 
         self.master = Tk()
@@ -16,13 +18,13 @@ class ProgramGUI:
         self.mainframe.columnconfigure(0, weight=1)
         self.mainframe.rowconfigure(0, weight=1)
 
-        self.performers = ['*']
-        self.performers.extend(performers)
+        self.performers = ['.*']
+        self.performers.extend(self.dal.performers)
 
         self.performer_one_var = StringVar()
         self.performer_two_var = StringVar()
         self.search_same_activity_var = BooleanVar()
-        self.search_same_performer_var = BooleanVar()
+        self.search_different_performer_var = BooleanVar()
 
         self.length_option_var = StringVar()
         self.length_option_var.set('any')
@@ -101,20 +103,34 @@ class ProgramGUI:
         ttk.Checkbutton(
             self.mainframe,
             text='Search different performers',
-            variable=self.search_same_performer_var,
-            onvalue=False,
-            offvalue=True
+            variable=self.search_different_performer_var,
+            onvalue=True,
+            offvalue=False
         ).grid(column=7, row=8, sticky=W)
 
         # Action button (generate and runs the query to look for the pattern)
         ttk.Button(self.mainframe, text="Search pattern", command=self.search_pattern).grid(column=7, row=9, sticky=W)
+
+    def query_pattern(self, query):
+        # pattern is a list containing, all of the performers which belong to the pattern
+        # found through the query specified from the pattern generator query interface (for each case)
+        return [
+            [
+                [
+                    [record["name1"], record["id1"]],
+                    [record["name2"], record["id2"]]
+                ]
+                for record in self.dal.run_query(query, {'case': case})
+            ]
+            for case in self.dal.cases[:1]
+        ]
 
     def search_pattern(self):
         query_builder = QueryBuilder()
         query_builder.performer_one = self.performer_one_var.get()
         query_builder.performer_two = self.performer_two_var.get()
         query_builder.same_activity = self.search_same_activity_var.get()
-        query_builder.same_performer = self.search_same_performer_var.get()
+        query_builder.different_performer = self.search_different_performer_var.get()
 
         length_option = self.length_option_var.get()
         if length_option == 'exactly':
@@ -130,5 +146,19 @@ class ProgramGUI:
             query_builder.pattern_length_from = self.from_length_var.get()
             query_builder.pattern_length_to = self.to_length_var.get()
 
+        query = query_builder.build()
+
         print('-' * 80)
-        print(query_builder.build().replace('    ', ' '))
+        print(query.replace('    ', ' '))
+
+        pattern = self.query_pattern(query)
+
+        print('pattern')
+        print(pattern)
+
+        # match found in the first case, pattern[0]
+        print('pattern[0]')
+        print(pattern[0])
+        print('len-pattern[0]')
+        print(len(pattern[0]))
+        # len(pattern[0]), count how many times a match with the considered pattern is found within the first case

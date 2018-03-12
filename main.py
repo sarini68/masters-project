@@ -15,4 +15,4 @@ dal = DAL(driver)
 # print('\tperformers: {}'.format(dal.works_with[0].performer))
 # print('Activities: {}'.format(dal.activity))
 
-ui.ProgramGUI(dal.performers)
+ui.ProgramGUI(dal)
