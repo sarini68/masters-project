@@ -1,5 +1,7 @@
 from tkinter import ttk, Tk, StringVar, N, W, E, S, BooleanVar
 
+from matplotlib import pyplot
+
 from data_access_layer import DAL
 from query_builder import QueryBuilder
 
@@ -111,6 +113,17 @@ class ProgramGUI:
         # Action button (generate and runs the query to look for the pattern)
         ttk.Button(self.mainframe, text="Search pattern", command=self.search_pattern).grid(column=7, row=9, sticky=W)
 
+    def display_pattern(self, pattern):
+        # Display color_case (the original wsa as determined by the log file)
+        pyplot.subplot(2, 1, 1)
+        pyplot.pcolor(self.dal.color_case, cmap='Vega20', edgecolors='k', linewidths=1)
+
+        # Display color_case_pattern (the related wsa' image about the matches found)
+        pyplot.subplot(2, 1, 2)
+        pyplot.pcolor(self.dal.color_case_from_pattern(pattern), cmap='Vega20', edgecolors='k', linewidths=1)
+
+        pyplot.show()
+
     def query_pattern(self, query):
         # pattern is a list containing, all of the performers which belong to the pattern
         # found through the query specified from the pattern generator query interface (for each case)
@@ -122,7 +135,7 @@ class ProgramGUI:
                 ]
                 for record in self.dal.run_query(query, {'case': case})
             ]
-            for case in self.dal.cases[:1]
+            for case in self.dal.cases
         ]
 
     def search_pattern(self):
@@ -162,3 +175,5 @@ class ProgramGUI:
         print('len-pattern[0]')
         print(len(pattern[0]))
         # len(pattern[0]), count how many times a match with the considered pattern is found within the first case
+
+        self.display_pattern(pattern)
