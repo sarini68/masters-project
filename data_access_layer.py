@@ -156,3 +156,87 @@ class DAL(object):
         if not self._activity:
             self._activity = self.fetch_activities()
         return self._activity
+
+    @property
+    def color_case(self):
+        # Prototype uses colormap (from matplotlib) to display wsa (and wsa')
+        # Note: there are many drawbacks (e.g., at most 10 different performers are displayed)
+        # So: another way should be considered (preferably web-based architecture)
+
+        # color_case is the data structure used to generate wsa through the colormap function
+        # each color_case is a two indexes list:
+        #   the first index is about the number of the case,
+        #   the second is about performers involved in that case
+        color_case = []
+
+        for entry in self.works_with:  # type: DAL.WorksWithEntry
+            color_tmp = []
+
+            for performer in entry.performer:
+                color_tmp.append(self.performers.index(performer))
+            color_case.append(color_tmp)
+
+        print('original color_case: {}'.format(color_case))
+
+        # One more drawback of using color map is that to generate the correct colormap,
+        # all the rows (cases) should have the same length (the same number of activities)
+        # so color_case is modified to make all rows the same length (the max_case_length)
+        # and a new value is inserted (total number of performers + 1) in color_case  to fill in the blanks
+        max_case_length = max(len(case) for case in color_case)
+        print('max case length: {}'.format(max_case_length))
+        blank_value = len(self.performers) + 1
+        color_case = [case + [blank_value] * (max_case_length - len(case)) for case in color_case]
+        print('new color_case: {}'.format(color_case))
+        color_case.reverse()
+
+        return color_case
+
+    def color_case_from_pattern(self, pattern):
+        # stat_pattern contains the count of the matches from the pattern for any of the case
+        stat_pattern = []
+        for i in range(len(self.cases)):
+            stat_pattern.append(len(pattern[i]))
+
+        print('stat_pattern')
+        print(stat_pattern)
+
+        # building color_case_pattern from color_case.
+        # color_case_pattern is the list containing the number of performers matching the pattern after the query
+        # color_case_pattern would be used to build a colormap describing wsa',
+        # i.e. the wsa image after the match with the considered pattern
+        # we consider to build both wsa and wsa' images, to promote visual comparison to help users to easily recognize
+        # the matches found considering a pattern expressed through the query
+
+        # using deepcopy module to copy color_case_pattern from color_case
+        from copy import deepcopy
+
+        # color_case_pattern is built from color_case (the original wsa)
+        # and then modified according to the results of the query defined through the query pattern interface
+        color_case_pattern = deepcopy(self.color_case)
+
+        # reversing color_case_pattern to have the situation as in the original color_case
+        # (before reversing for displaying purposes)
+        color_case_pattern.reverse()
+
+        # building matches in color_case_pattern; for any of the match found,
+        # the corresponding position in the color_case_pattern lisst
+        # is filled with the value len(performer_dist)+1 (that is
+        # the same color used in color_case to fill in the blanks).
+        # To verify whether another color for the match would be more appropriated,
+        # may be the color complementary to the color of the corresponding performer:
+        # e.g., computed by MAX_COLOR - works_with[j][1].index(pattern[j][i][0][1])
+        for j in range(len(self.cases)):
+            for i in range(len(pattern[j])):
+                x = self.works_with[j].id.index(pattern[j][i][0][1])
+                color_case_pattern[j][x] = len(self.performers) + 1
+                y = self.works_with[j].id.index(pattern[j][i][1][1])
+                color_case_pattern[j][y] = len(self.performers) + 1
+
+        print('color_case_pattern')
+        print(color_case_pattern)
+
+        # reversing color_case_pattern as done in color_case for visualization purposes
+        # (i.e., to put first case at the top row of the colormap)
+        color_case_pattern.reverse()
+
+        return color_case_pattern
