@@ -116,11 +116,11 @@ class ProgramGUI:
     def display_pattern(self, pattern):
         # Display color_case (the original wsa as determined by the log file)
         pyplot.subplot(2, 1, 1)
-        pyplot.pcolor(self.dal.color_case, cmap='Vega20', edgecolors='k', linewidths=1)
+        pyplot.pcolor(self.dal.color_case, cmap='tab20', edgecolors='k', linewidths=1)
 
         # Display color_case_pattern (the related wsa' image about the matches found)
         pyplot.subplot(2, 1, 2)
-        pyplot.pcolor(self.dal.color_case_from_pattern(pattern), cmap='Vega20', edgecolors='k', linewidths=1)
+        pyplot.pcolor(self.dal.color_case_from_pattern(pattern), cmap='tab20', edgecolors='k', linewidths=1)
 
         pyplot.show()
 
