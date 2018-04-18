@@ -1,3 +1,4 @@
-pygal
-matplotlib
+gunicorn
+flask
 neo4j-driver
+matplotlib
