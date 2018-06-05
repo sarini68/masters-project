@@ -1,4 +1,6 @@
+import logging
 import os
+import sys
 
 from flask import Flask, render_template, request, make_response
 from matplotlib import pyplot
@@ -7,15 +9,23 @@ from neo4j.v1 import GraphDatabase, basic_auth
 from data_access_layer import DAL
 from query_builder import QueryBuilder
 
-DEFAULT_USER = "app92124873-nY8mkb"
-DEFAULT_PASSWORD = "b.hrxpJRs9BVRq.ZqM9sSBJTMkU2OfR"
-DEFAULT_DRIVER_URI = "bolt://hobby-ooiobamoecilgbkepmmbabal.dbs.graphenedb.com:24786"
+LOG_FORMAT = "[%(levelname)s]: %(message)s"
+LOG_LEVEL = logging.DEBUG
+
+logger = logging.getLogger()
+logger.setLevel(LOG_LEVEL)
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter(LOG_FORMAT))
+handler.setLevel(LOG_LEVEL)
+logger.addHandler(handler)
+
+logging.getLogger("neo4j.bolt").setLevel(logging.CRITICAL)
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "this should be changed"
-db_username = os.environ.get("GRAPHENEDB_BOLT_USER", default=DEFAULT_USER)
-db_password = os.environ.get("GRAPHENEDB_BOLT_PASSWORD", default=DEFAULT_PASSWORD)
-driver_uri = os.environ.get("GRAPHENEDB_BOLT_URL", default=DEFAULT_DRIVER_URI)
+app.config["SECRET_KEY"] = os.environ.get("APP_SECRET", default="dummy_secret")
+db_username = os.environ.get("DB_USER")
+db_password = os.environ.get("DB_PASSWORD")
+driver_uri = os.environ.get("BOLT_URL")
 driver = GraphDatabase.driver(driver_uri, auth=basic_auth(db_username, db_password))
 dal = DAL(driver)
 
@@ -30,19 +40,30 @@ def main():
     return render_template('public/public.html', performers=dal.performers)
 
 
-def query_pattern(query):
-    # pattern is a list containing, all of the performers which belong to the pattern
-    # found through the query specified from the pattern generator query interface (for each case)
-    return [
-        [
-            [
-                [record["name1"], record["id1"]],
-                [record["name2"], record["id2"]]
-            ]
-            for record in dal.run_query(query, {'case': case})
-        ]
-        for case in dal.cases
-    ]
+def is_valid_path(ww):
+    current_timestamp = ww[0]['start']
+
+    for w in ww:
+        if w['start'] != current_timestamp:
+            return False
+        current_timestamp = w['finish']
+
+    return True
+
+
+def build_pattern(query_builder: QueryBuilder):
+    query, base_params = query_builder.build()
+    logger.debug(query)
+
+    patterns = []
+    for case in dal.cases:
+        params = {'case': case['id'], **base_params}
+        result = dal.run_query(query, params)
+        patterns.append(
+            [record['ww'] for record in result if is_valid_path(record['ww'])]
+        )
+
+    return patterns
 
 
 def build_pattern_image(pattern):
@@ -68,7 +89,7 @@ def search():
     query_builder.different_performer = "different_performers" in request.form
 
     length_option = request.form["pattern_length_type"]
-    print(length_option)
+
     if length_option == 'exactly':
         query_builder.pattern_length = request.form["exactly"]
 
@@ -82,23 +103,7 @@ def search():
         query_builder.pattern_length_from = request.form["lower_bound"]
         query_builder.pattern_length_to = request.form["upper_bound"]
 
-    query = query_builder.build()
-
-    print('-' * 80)
-    print(query.replace('    ', ' '))
-
-    pattern = query_pattern(query)
-
-    print('pattern')
-    print(pattern)
-
-    # match found in the first case, pattern[0]
-    print('pattern[0]')
-    print(pattern[0])
-    print('len-pattern[0]')
-    print(len(pattern[0]))
-    # len(pattern[0]), count how many times a match with the considered pattern is found within the first case
-
+    pattern = build_pattern(query_builder)
     response = make_response(build_pattern_image(pattern))
     response.headers['Content-Type'] = 'image/png'
     return response
