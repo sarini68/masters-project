@@ -42,6 +42,11 @@ def create_works_with_relations():
     run_query(query)
 
 
+def run_algorithms():
+    run_query('call algo.labelPropagation("performer", "works_with")')
+    run_query('call algo.pageRank("performer", "works_with")')
+
+
 def seed_data(records):
     for record in records:
         create_query = '''
@@ -61,10 +66,13 @@ def drop_data():
 
 def main():
     drop_data()
+
     with open(get_csv_file()) as csv_file:
         reader = csv.DictReader(csv_file, delimiter=";")
         seed_data(reader)
+
     create_works_with_relations()
+    run_algorithms()
 
 
 if __name__ == '__main__':
