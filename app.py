@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -37,7 +38,27 @@ def status():
 
 @app.route('/', methods=["GET"])
 def main():
-    return render_template('public/public.html', performers=dal.performers)
+    return render_template('common/index.html')
+
+
+@app.route('/explorer')
+def explorer():
+    return render_template(
+        'public/explorer.html',
+        db_config=json.dumps({
+            "db_username": db_username,
+            "db_password": db_password,
+            "db_url": driver_uri
+        })
+    )
+
+
+@app.route('/creator', methods=["GET"])
+def creator():
+    return render_template(
+        'public/creator.html',
+        performers=dal.performers
+    )
 
 
 def is_valid_path(ww):
@@ -50,6 +71,15 @@ def is_valid_path(ww):
 
     return True
 
+def is_valid_path(ww):
+    current_timestamp = ww[0]['start']
+
+    for w in ww:
+        if w['start'] != current_timestamp:
+            return False
+        current_timestamp = w['finish']
+
+    return True
 
 def build_pattern(query_builder: QueryBuilder):
     query, base_params = query_builder.build()
@@ -80,7 +110,7 @@ def build_pattern_image(pattern):
     return open("foo.png", 'rb').read()
 
 
-@app.route('/', methods=["POST"])
+@app.route('/creator', methods=["POST"])
 def search():
     query_builder = QueryBuilder()
     query_builder.performer_one = request.form["performer_1"]
