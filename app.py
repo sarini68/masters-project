@@ -7,8 +7,7 @@ from flask import Flask, render_template, request, make_response
 from matplotlib import pyplot
 from neo4j.v1 import GraphDatabase, basic_auth
 
-from data_access_layer import DAL
-from query_builder import QueryBuilder
+from dal import DAL, QueryBuilder
 
 LOG_FORMAT = "[%(levelname)s]: %(message)s"
 LOG_LEVEL = logging.DEBUG
@@ -23,12 +22,21 @@ logger.addHandler(handler)
 logging.getLogger("neo4j.bolt").setLevel(logging.CRITICAL)
 
 app = Flask(__name__)
+
 app.config["SECRET_KEY"] = os.environ.get("APP_SECRET", default="dummy_secret")
-db_username = os.environ.get("DB_USER")
-db_password = os.environ.get("DB_PASSWORD")
-driver_uri = os.environ.get("BOLT_URL")
-driver = GraphDatabase.driver(driver_uri, auth=basic_auth(db_username, db_password))
-dal = DAL(driver)
+app.config["DB_USER"] = os.environ.get("DB_USER")
+app.config["DB_PASSWORD"] = os.environ.get("DB_PASSWORD")
+app.config["BOLT_URL"] = os.environ.get("BOLT_URL")
+
+dal = DAL(
+    GraphDatabase.driver(
+        app.config["BOLT_URL"],
+        auth=basic_auth(
+            app.config["DB_USER"],
+            app.config["DB_PASSWORD"]
+        )
+    )
+)
 
 
 @app.route('/status')
@@ -45,11 +53,13 @@ def main():
 def explorer():
     return render_template(
         'public/explorer.html',
-        db_config=json.dumps({
-            "db_username": db_username,
-            "db_password": db_password,
-            "db_url": driver_uri
-        })
+        db_config=json.dumps(
+            {
+                "db_username": app.config["DB_USER"],
+                "db_password": app.config["DB_PASSWORD"],
+                "db_url": app.config["BOLT_URL"]
+            }
+        )
     )
 
 
@@ -71,15 +81,6 @@ def is_valid_path(ww):
 
     return True
 
-def is_valid_path(ww):
-    current_timestamp = ww[0]['start']
-
-    for w in ww:
-        if w['start'] != current_timestamp:
-            return False
-        current_timestamp = w['finish']
-
-    return True
 
 def build_pattern(query_builder: QueryBuilder):
     query, base_params = query_builder.build()
