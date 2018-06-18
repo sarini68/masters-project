@@ -22,7 +22,7 @@ class QueryBuilder:
         base_params = {"p1": self.performer_one, "p2": self.performer_two}
 
         query = f'''
-        MATCH n=(p1)-[:works_with* {{case: $case}}]->(p2)
+        MATCH n=(p1)-[:works_with*{self.length_range} {{case: $case}}]->(p2)
         WHERE
             p1.name =~$p1 and p2.name =~$p2
             {"and p1.name<>p2.name" if self.different_performer else ''}
