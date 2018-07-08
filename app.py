@@ -1,24 +1,11 @@
 import json
-import logging
-import sys
 
 from flask import Flask, render_template, request, make_response
 from matplotlib import pyplot
 from neo4j.v1 import GraphDatabase, basic_auth
 
 from dal import DAL, QueryBuilder
-
-LOG_FORMAT = "[%(levelname)s]: %(message)s"
-LOG_LEVEL = logging.DEBUG
-
-logger = logging.getLogger()
-logger.setLevel(LOG_LEVEL)
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter(LOG_FORMAT))
-handler.setLevel(LOG_LEVEL)
-logger.addHandler(handler)
-
-logging.getLogger("neo4j.bolt").setLevel(logging.CRITICAL)
+from logger import logger
 
 app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
@@ -137,4 +124,4 @@ def search():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=app.config['DEBUG'])
