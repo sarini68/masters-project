@@ -31,7 +31,14 @@
 <body>
 
 <div class="navbar-toggler" align="center">
-    {% block navigation %}{% endblock %}
+    {% block navigation %}
+        <a href="/creator">
+            <button class="btn-lg btn-info">Pattern Creator</button>
+        </a>
+        <a href="/explorer">
+            <button class="btn-lg btn-info">Data Explorer</button>
+        </a>
+    {% endblock %}
 </div>
 
 
