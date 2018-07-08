@@ -17,8 +17,8 @@ class TestingConfig(Config):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    DB_USER = 'neo4j'
-    DB_PASSWORD = '123456'
+    DB_USER = 'neo4j'  # Set your local neo4j db user
+    DB_PASSWORD = '123456'  # Set your local neo4j db password
 
 
 class ProductionConfig(Config):

@@ -1,15 +1,21 @@
 import csv
-import os
 import sys
 
 from neo4j.v1 import GraphDatabase, basic_auth
 
+from config import DevelopmentConfig
+from logger import logger
+
 DEFAULT_CSV_FILE = './data/log-ws.csv'
 
+config = DevelopmentConfig()
+
 db_driver = GraphDatabase.driver(
-    os.environ.get("BOLT_URL"),
-    auth=basic_auth(os.environ.get("DB_USER"),
-                    os.environ.get("DB_PASSWORD"))
+    config.BOLT_URL,
+    auth=basic_auth(
+        config.DB_USER,
+        config.DB_PASSWORD
+    )
 )
 
 
@@ -26,6 +32,8 @@ def run_query(query, *args, **kwargs):
 
 
 def create_works_with_relations():
+    logger.info("Creating WORKS_WITH relations...")
+
     query = '''
     MATCH (a1)<-[i1:includes]-(c:case)-[i2:includes]->(a2)
     WHERE i1.timestamp - i2.timestamp = 1
@@ -43,11 +51,15 @@ def create_works_with_relations():
 
 
 def run_algorithms():
+    logger.info("Running graph algorithms...")
+
     run_query('call algo.labelPropagation("performer", "works_with")')
     run_query('call algo.pageRank("performer", "works_with")')
 
 
 def seed_data(records):
+    logger.info("Seeding data...")
+
     for record in records:
         create_query = '''
         MERGE (c:case {id: {case}})
@@ -61,6 +73,7 @@ def seed_data(records):
 
 
 def drop_data():
+    logger.info("Dropping database...")
     run_query('MATCH (n) DETACH DELETE n')
 
 
@@ -77,3 +90,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+logger.info("Done!")
