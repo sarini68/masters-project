@@ -1,7 +1,6 @@
 import json
 
 from flask import Flask, render_template, request, make_response
-from matplotlib import pyplot
 from neo4j.v1 import GraphDatabase, basic_auth
 
 from dal import DAL, QueryBuilder
@@ -81,6 +80,10 @@ def build_pattern(query_builder: QueryBuilder):
 
 
 def build_pattern_image(pattern):
+    import matplotlib
+    matplotlib.use('Agg')
+    from matplotlib import pyplot
+
     # Display color_case (the original wsa as determined by the log file)
     pyplot.subplot(2, 1, 1)
     pyplot.pcolor(dal.color_case, cmap='tab20', edgecolors='k', linewidths=1)
