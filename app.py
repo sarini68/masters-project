@@ -1,23 +1,19 @@
 import json
+import os
+import threading
 
-from flask import Flask, render_template, request, make_response
-from neo4j.v1 import GraphDatabase, basic_auth
+from flask import Flask, flash, request, redirect
+from flask import render_template, make_response
+from werkzeug.utils import secure_filename
 
+import dbms
 from dal import DAL, QueryBuilder
 from logger import logger
 
 app = Flask(__name__)
 app.config.from_object('config.DevelopmentConfig')
 
-dal = DAL(
-    GraphDatabase.driver(
-        app.config["BOLT_URL"],
-        auth=basic_auth(
-            app.config["DB_USER"],
-            app.config["DB_PASSWORD"]
-        )
-    )
-)
+dal = DAL.from_config(app.config)
 
 
 @app.route('/status')
@@ -28,6 +24,45 @@ def status():
 @app.route('/', methods=["GET"])
 def main():
     return render_template('common/index.html')
+
+
+def allowed_file(filename):
+    extension = filename.rsplit('.', 1)[1].lower()
+    return '.' in filename and extension in {'csv'}
+
+
+@app.route('/uploader', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part in the request')
+            return redirect(request.url)
+
+        file = request.files['file']
+
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('File not selected')
+            return redirect(request.url)
+
+        if allowed_file(file.filename):
+            file_name = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+            file.save(file_path)
+            flash("File uploaded successfully")
+            # Start worker to initialize database
+            threading.Thread(
+                name="neo4j-init",
+                target=dbms.load_file,
+                args=(file_path,)
+            ).start()
+        else:
+            flash('File should have .csv extension')
+
+    return render_template("public/uploader.html")
 
 
 @app.route('/explorer')
