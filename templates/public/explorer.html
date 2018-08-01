@@ -1,43 +1,179 @@
 {% extends "common/base.html" %}
+{% set title="explorer" %}
 
 {% block head %}
     <script src="https://cdn.rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>
 {% endblock %}
 
 {% block body %}
-    <div class="container data-explorer" id="vis" data-config="{{ db_config }}"></div>
+    <div class="container fluid">
+        <div class="row">
+
+
+            <div class="col">
+                <form method="POST">
+                    <div class="container">
+
+                        <div class="form-row mt-3">
+
+                            <div class="input-group mt-3">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text" for="case">Case</label>
+                                </div>
+                                <select class="custom-select" id="case" name="case" title="case">
+                                    <option value=".*">*</option>
+                                    {% for case in cases %}
+                                        {% if case == selected_case %}
+                                            <option selected value={{ case }}>{{ case }}</option>
+                                        {% else %}
+                                            <option value={{ case }}>{{ case }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+
+                            <div class="input-group mt-3">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        {% if display_includes %}
+                                            <input checked type="checkbox" id="includes" name="includes">
+                                        {% else %}
+                                            <input type="checkbox" id="includes" name="includes">
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <label for="includes" class="form-control">INCLUDES</label>
+                            </div>
+
+                        </div>
+
+                        <div class="form-row mt-3">
+
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text" for="performer">Performer</label>
+                                </div>
+                                <select class="custom-select" id="performer" name="performer" title="performer">
+                                    <option value=".*">*</option>
+                                    {% for performer in performers %}
+                                        {% if performer == selected_performer %}
+                                            <option selected value={{ performer }}>{{ performer }}</option>
+                                        {% else %}
+                                            <option value={{ performer }}>{{ performer }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="input-group mt-3">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        {% if display_works_with %}
+                                            <input checked type="checkbox" id="works_with" name="works_with">
+                                        {% else %}
+                                            <input type="checkbox" id="works_with" name="works_with">
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <label for="works_with" class="form-control">WORKS_WITH</label>
+                            </div>
+
+                        </div>
+
+                        <div class="form-row mt-3">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <label class="input-group-text" for="activity">Activity</label>
+                                </div>
+                                <select class="custom-select" id="activity" name="activity" title="activity">
+                                    <option value=".*">*</option>
+                                    {% for activity in activities %}
+                                        {% if activity == selected_activity %}
+                                            <option selected value={{ activity }}>{{ activity }}</option>
+                                        {% else %}
+                                            <option value={{ activity }}>{{ activity }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="input-group mt-3">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text">
+                                        {% if display_performed %}
+                                            <input checked type="checkbox" id="performed" name="performed">
+                                        {% else %}
+                                            <input type="checkbox" id="performed" name="performed">
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <label for="performed" class="form-control">PERFORMED</label>
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-row mt-3">
+                            <button type="submit" class="btn btn-primary btn-block">Fetch Data</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="col mt-3" id="vis" data-config="{{ db_config }}"></div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block script %}
     <script>
-        $(document).ready(function () {
-                var container_id = "vis";
-                var config_as_string = document.getElementById(container_id).dataset.config;
-                var config = JSON.parse(config_as_string);
 
-                config.container_id = container_id;
-                config.trust = "TRUST_CUSTOM_CA_SIGNED_CERTIFICATES";
-                config.initial_cypher = "MATCH p=()-[:works_with]->() RETURN p";
+        function loadData() {
+            var container_id = "vis";
+            var config_as_string = document.getElementById(container_id).dataset.config;
+            var config = JSON.parse(config_as_string);
 
-                config.labels = {
-                    "performer": {
-                        caption: "name",
-                        size: "pagerank",
-                        community: "partition"
-                    }
-                };
+            config.container_id = container_id;
 
-                config.relationships = {
-                    "works_with": {
-                        caption: "case"
-                        // caption: false,
-                        // thickness: "count"
-                    }
-                };
+            config.labels = {
+                "performer": {
+                    caption: "name",
+                    size: "pagerank",
+                    community: "partition"
+                },
+                "activity": {
+                    caption: "name",
+                    {#size: "pagerank",#}
+                    {#community: "partition"#}
+                },
 
-                // noinspection JSPotentiallyInvalidConstructorUsage
-                new NeoVis.default(config).render();
-            }
-        );
+                "case": {
+                    caption: "id"
+                }
+            };
+
+            config.relationships = {
+                "works_with": {
+                    caption: "case"
+                    // caption: false,
+                    // thickness: "count"
+                },
+
+                "includes": {
+                    caption: false
+                },
+
+                "performed": {
+                    caption: false
+                }
+            };
+
+            // noinspection JSPotentiallyInvalidConstructorUsage
+            new NeoVis.default(config).render();
+        }
+
+        $(document).ready(loadData);
     </script>
 {% endblock %}

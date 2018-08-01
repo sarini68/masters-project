@@ -44,6 +44,12 @@ class DAL(object):
 
     @property
     @lru_cache(maxsize=32)
+    def activities(self):
+        q = "MATCH (a:activity) RETURN a.name as name"
+        return [record['name'] for record in self.run_query(q)]
+
+    @property
+    @lru_cache(maxsize=32)
     def cases(self):
         query = '''
         MATCH n=(c:case)-[i:includes]->()
