@@ -1,40 +1,22 @@
 
 ### Intro
 
-Our neo4j database is already deploied on remote server and holds the data from log.csv file. By default program uses that (remote) database. It is possible to alter this behavioure using 4 optional arguments that program supports. They can be used to inject custom database configuration (maybe you want to use local database)
+Neovis has problems communicating with neo4j database on Amazon. Namely, neovis does not trust the self-signed certificates that reaside on Amazon server thus refuses to fetch the data from there. Until we fix the issue the only way to test whole application is to use local instance of neo4j database.
 
 ### Preliminaries
 
-Program is written and tested in `python: 3.6.3`
+Clone source code from Github. Install required dependencies (```pip install -r requirements.txt```).
 
+There is the `config.py` file in the project root directory. It contains DevelopmentConfig object. You have to change DB_USER and DB_PASSWORD with the correct values (i.e. your user and your password)
 
-```bash
-# Run following command from project root directory to install required dependencies
-pip install -r requirements.txt
-```
+Note: Program is written and tested in `python: 3.6`.
 
-### How to run?
+### Populate database
 
-```bash
-# See usage information of the program
-python main.py -h
-```
+You can use data base management script, `dbms.py`, to populate database from csv data. Run `python dbms.py` from project root directory.
 
+Note: This will drop and recreate whole database.
 
-```bash
-# Run program without any arguments to use remote database
-python main.py
-```
+### Running the web application
 
-
-```bash
-# Let's say you have local neo4j database (with username neorj, password 123456) up and running.
-# If you want to use that instance instead of the remote one use following command 
-python main.py --db-username=neo4j --db-password=123456 --driver-uri=bolt://localhost
-```
-
-
-```bash
-# You can also use additional --seed-db flag to force program to populate neo4j database from log.csv
-python main.py --db-username=neo4j --db-password=123456 --driver-uri=bolt://localhost --seed-db
-```
+Run command `python app.py` from project root directory. This will start the debug web server on `127.0.0.1:5000`, after this you can use your browser to access the application via url `http://localhost:5000`.
