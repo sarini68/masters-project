@@ -1,8 +1,7 @@
 import json
 import os
-import threading
 
-from flask import Flask, flash, request, redirect
+from flask import Flask, flash, request
 from flask import render_template
 from werkzeug.utils import secure_filename
 
@@ -31,38 +30,34 @@ def allowed_file(filename):
     return '.' in filename and extension in {'csv'}
 
 
-@app.route('/uploader', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part in the request')
-            return redirect(request.url)
-
-        file = request.files['file']
-
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('File not selected')
-            return redirect(request.url)
-
-        if allowed_file(file.filename):
-            file_name = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
-            file.save(file_path)
-            flash("File uploaded successfully")
-            # Start worker to initialize database
-            threading.Thread(
-                name="neo4j-init",
-                target=dbms.load_file,
-                args=(file_path,)
-            ).start()
-        else:
-            flash('File should have .csv extension')
-
+@app.route('/uploader', methods=['GET'])
+def uploader():
     return render_template("public/uploader.html")
+
+
+@app.route('/uploader', methods=['POST'])
+def upload_file():
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        flash('No file part in the request')
+        return ''
+
+    file = request.files['file']
+
+    # if user does not select file, browser also
+    # submit an empty part without filename
+    if file.filename == '':
+        flash('File not selected')
+    elif allowed_file(file.filename):
+        file_name = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+        file.save(file_path)
+        dbms.load_file(file_path)
+        flash("File uploaded successfully")
+    else:
+        flash('File should have .csv extension')
+
+    return ''
 
 
 @app.route('/explorer', methods=["GET", "POST"])
