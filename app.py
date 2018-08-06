@@ -3,7 +3,7 @@ import os
 import threading
 
 from flask import Flask, flash, request, redirect
-from flask import render_template, make_response
+from flask import render_template
 from werkzeug.utils import secure_filename
 
 import dbms
@@ -208,10 +208,21 @@ def search():
         query_builder.pattern_length_from = request.form["lower_bound"]
         query_builder.pattern_length_to = request.form["upper_bound"]
 
-    pattern = build_pattern(query_builder)
-    response = make_response(build_pattern_image(pattern))
-    response.headers['Content-Type'] = 'image/png'
-    return response
+    cypher = query_builder.build()
+    logger.debug(cypher)
+
+    return render_template(
+        "public/result.html",
+        db_config=json.dumps(
+            {
+                "server_url": app.config["BOLT_URL"],
+                "server_user": app.config["DB_USER"],
+                "server_password": app.config["DB_PASSWORD"],
+                "encrypted": app.config["DB_CONNECTION_ENCRYPTED"],
+                "initial_cypher": cypher
+            }
+        )
+    )
 
 
 if __name__ == '__main__':

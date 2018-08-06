@@ -151,8 +151,8 @@ class QueryBuilder:
 
     def __init__(self):
         self.pattern_length = None
-        self.pattern_length_to = ''
-        self.pattern_length_from = ''
+        self.pattern_length_to = 2
+        self.pattern_length_from = 1
 
         self.performer_one = '.*'
         self.performer_two = '.*'
@@ -163,24 +163,46 @@ class QueryBuilder:
     @property
     def length_range(self):
         if self.pattern_length:
-            return self.pattern_length
+            return "*{}".format(self.pattern_length)
 
-        return '{}..{}'.format(self.pattern_length_from, self.pattern_length_to)
+        return '*{}..{}'.format(self.pattern_length_from, self.pattern_length_to)
 
     def build(self):
-        base_params = {"p1": self.performer_one, "p2": self.performer_two}
+        length_range = self.length_range
+        if length_range == '*..':
+            length_range = ''
 
         query = f'''
-        MATCH n=(p1)-[:works_with*{self.length_range} {{case: $case}}]->(p2)
+        MATCH wsa=()-[:works_with]->()
+        FOREACH (n IN nodes(wsa) | SET n.mark = 0)
+
+        WITH wsa
+        MATCH wsa_p=(p1)-[:works_with{self.length_range}]->(p2)
         WHERE
-            p1.name =~$p1 and p2.name =~$p2
+            p1.name =~ "{self.performer_one}" and
+            p2.name =~ "{self.performer_two}"
             {"and p1.name<>p2.name" if self.different_performer else ''}
-        WITH relationships(n) as ww
-        WITH ww[0] as first, ww[-1] as last, ww
-        WHERE
-            last.finish - first.start > 0
-            {"and last.a2=first.a1" if self.same_activity else ''}
-        RETURN ww
+        FOREACH (n IN nodes(wsa_p) | SET n.mark = 1)
+
+        RETURN wsa
         '''
 
-        return query, base_params
+        return query
+
+    # def build(self):
+    #     base_params = {"p1": self.performer_one, "p2": self.performer_two}
+    #
+    #     query = f'''
+    #     MATCH n=(p1)-[:works_with*{self.length_range} {{case: $case}}]->(p2)
+    #     WHERE
+    #         p1.name =~$p1 and p2.name =~$p2
+    #         {"and p1.name<>p2.name" if self.different_performer else ''}
+    #     WITH relationships(n) as ww
+    #     WITH ww[0] as first, ww[-1] as last, ww
+    #     WHERE
+    #         last.finish - first.start > 0
+    #         {"and last.a2=first.a1" if self.same_activity else ''}
+    #     RETURN ww
+    #     '''
+    #
+    #     return query, base_params
