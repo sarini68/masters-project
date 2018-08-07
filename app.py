@@ -63,7 +63,8 @@ def upload_file():
 @app.route('/explorer', methods=["GET", "POST"])
 def explorer():
     case_id = ".*"
-    performer = ".*"
+    performer_1 = ".*"
+    performer_2 = ".*"
     activity = ".*"
     works_with = False
     performed = False
@@ -73,7 +74,8 @@ def explorer():
 
     if request.method == "POST":
         case_id = request.form['case']
-        performer = request.form['performer']
+        performer_1 = request.form['performer_1']
+        performer_2 = request.form['performer_2']
         activity = request.form['activity']
         includes = "includes" in request.form
         performed = "performed" in request.form
@@ -83,22 +85,23 @@ def explorer():
         return_entities.update(("nc", "ri", "na"))
 
     if performed:
-        return_entities.update(("na", "rp", "np"))
+        return_entities.update(("na", "rp", "np_1"))
 
     if works_with or not return_entities:
-        return_entities.update(("np", "rw"))
+        return_entities.update(("np_1", "rw", "np_2"))
 
     cypher = f'''
         MATCH
             n=
             (nc:case)-[ri:includes]->
             (na:activity)<-[rp:performed]-
-            (np:performer)-[rw:works_with]->()
+            (np_1:performer)-[rw:works_with]->(np_2:performer)
         WHERE
             nc.id =~ "{case_id}" and
             rp.case =~ "{case_id}" and
             rw.case =~ "{case_id}" and
-            np.name =~ "{performer}" and
+            np_1.name =~ "{performer_1}" and
+            np_2.name =~ "{performer_2}" and
             na.name =~ "{activity}"
         RETURN {",".join(return_entities or ["n"])}
     '''
@@ -120,7 +123,8 @@ def explorer():
         performers=dal.performers,
         activities=dal.activities,
         selected_activity=activity,
-        selected_performer=performer,
+        selected_performer_1=performer_1,
+        selected_performer_2=performer_2,
         selected_case=case_id,
         display_works_with=works_with,
         display_performed=performed,
